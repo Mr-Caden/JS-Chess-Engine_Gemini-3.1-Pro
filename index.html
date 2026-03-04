@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A high-performance Web Worker threaded JavaScript Chess Engine with Alpha-Beta pruning, Quiescence search, and a visual evaluation bar.">
+    <meta name="theme-color" content="#1e1e1e">
     <title>Advanced Web-Worker Chess Engine</title>
     
     <!-- External Libraries -->
@@ -16,10 +18,12 @@
 </head>
 <body>
 
-<div class="container">
-    <h2>NegaMax Engine (Threaded)</h2>
+<main class="container">
+    <header>
+        <h2>NegaMax Engine (Threaded)</h2>
+    </header>
     
-    <div class="controls">
+    <section class="controls">
         <label for="gameMode">Mode: </label>
         <select id="gameMode">
             <option value="pve_w">Player (White) vs Bot (Black)</option>
@@ -34,20 +38,29 @@
             <option value="4">4 (Standard Engine)</option>
             <option value="5">5 (Heavy Computation)</option>
         </select>
-        <br><br>
-        <button id="startBtn">Start Game</button>
-        <button id="flipBtn" class="secondary">Flip Board</button>
-    </div>
+        
+        <div class="button-group">
+            <button id="startBtn">Start Game</button>
+            <button id="flipBtn" class="secondary">Flip Board</button>
+        </div>
+    </section>
 
-    <div id="status">Waiting to start...</div>
-    <div id="board"></div>
+    <div id="status" aria-live="polite">Waiting to start...</div>
     
-    <div class="stats-box">
+    <!-- The Chessboard and Eval Bar Side-by-Side -->
+    <section class="board-wrapper">
+        <div id="evalBar" aria-label="Evaluation Bar">
+            <div id="evalFill"><span id="evalText">0.0</span></div>
+        </div>
+        <div id="board"></div>
+    </section>
+    
+    <section class="stats-box" aria-label="Engine Statistics">
         <div class="stat-item">Nodes Searched: <span id="nodesCount">0</span></div>
         <div class="stat-item">Speed: <span id="nps">0</span> NPS</div>
         <div class="stat-item">Eval: <span id="evalScore">0.00</span></div>
-    </div>
-</div>
+    </section>
+</main>
 
 <!-- Application Logic -->
 <script src="main.js"></script>
