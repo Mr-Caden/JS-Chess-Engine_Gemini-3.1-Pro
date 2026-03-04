@@ -1,5 +1,4 @@
 # Web-Worker JS Chess Engine
-![Lighthouse Score: 100/100](https://img.shields.io/badge/Lighthouse-100%2F100-brightgreen)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
 A high-performance, purely client-side Chess Engine built entirely in JavaScript. 
