@@ -1,4 +1,8 @@
 /* --- Global Styles --- */
+*, *::before, *::after {
+    box-sizing: border-box; /* Crucial for responsive grid/flex borders */
+}
+
 body { 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
     background-color: #1e1e1e; 
@@ -45,7 +49,7 @@ select {
 
 /* Accessible High-Contrast Colors for Lighthouse */
 button { 
-    background-color: #2e7d32; /* Darker green for >4.5:1 contrast */
+    background-color: #2e7d32; 
     color: white; 
     transition: background 0.2s; 
 }
@@ -53,7 +57,7 @@ button {
 button:hover { background-color: #1b5e20; }
 
 button.secondary { 
-    background-color: #1565c0; /* Darker blue for >4.5:1 contrast */
+    background-color: #1565c0; 
 }
 
 button.secondary:hover { background-color: #0d47a1; }
@@ -66,11 +70,13 @@ button.secondary:hover { background-color: #0d47a1; }
     justify-content: center;
     align-items: stretch;
     margin: 15px auto;
-    max-width: 450px; /* Limits max board size natively */
+    max-width: 450px; 
+    width: 100%;
 }
 
 #board { 
-    width: 100%; 
+    flex: 1; /* Automatically scales remaining width */
+    min-width: 0; /* Prevents flexbox bleeding on mobile devices */
     border: 4px solid #333; 
     border-radius: 4px; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
@@ -79,14 +85,12 @@ button.secondary:hover { background-color: #0d47a1; }
 /* Evaluation Bar Styling */
 #evalBar {
     width: 25px;
+    flex-shrink: 0; /* Ensures eval bar doesn't get squeezed */
     background-color: #333; /* Black advantage */
     border: 2px solid #222;
     border-radius: 4px;
     margin-right: 10px;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
     overflow: hidden;
 }
 
@@ -97,6 +101,7 @@ button.secondary:hover { background-color: #0d47a1; }
     transition: height 0.5s ease-in-out;
     position: absolute;
     bottom: 0;
+    left: 0;
 }
 
 #evalText {
@@ -105,9 +110,9 @@ button.secondary:hover { background-color: #0d47a1; }
     text-align: center;
     font-size: 11px;
     font-weight: bold;
-    color: #888;
-    top: -15px; /* Floats just above the white fill */
+    color: #333;
     z-index: 5;
+    /* Dynamically positioned via main.js */
 }
 
 /* Move Highlighting overrides */
@@ -139,9 +144,23 @@ button.secondary:hover { background-color: #0d47a1; }
 
 /* --- Mobile Responsiveness --- */
 @media (max-width: 500px) {
-    .board-wrapper { max-width: 100%; }
-    #evalBar { width: 15px; }
-    #evalText { font-size: 9px; }
-    .controls select, .controls button { width: 100%; margin: 5px 0; }
-    .stats-box { flex-direction: column; gap: 5px; }
+    .board-wrapper { 
+        max-width: 100%; 
+        margin: 10px 0; 
+    }
+    #evalBar { 
+        width: 18px; 
+        margin-right: 8px; 
+    }
+    #evalText { 
+        font-size: 9px; 
+    }
+    .controls select, .controls button { 
+        width: 100%; 
+        margin: 5px 0; 
+    }
+    .stats-box { 
+        flex-direction: column; 
+        gap: 5px; 
+    }
 }
