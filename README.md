@@ -43,8 +43,3 @@ Due to modern browser Cross-Origin Resource Sharing (CORS) security policies reg
 * **Core Logic:** Vanilla Javascript (ES6+)
 * **UI/Board Graphics:**[Chessboard.js](https://chessboardjs.com/)
 * **Move Validation/Generation:** [Chess.js](https://github.com/jhlywa/chess.js)
-
----
-
-### Acknowledgments
-This engine was developed as a study in algorithmic efficiency and web threading. Initial architecture, DOM optimizations, and iterative structural refinements were developed with the assistance of Google Gemini 3.1 Pro Preview.
