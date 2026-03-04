@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Web-Worker Chess Engine</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+    <!-- Internal Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>NegaMax Engine (Threaded)</h2>
+    
+    <div class="controls">
+        <label for="gameMode">Mode: </label>
+        <select id="gameMode">
+            <option value="pve_w">Player (White) vs Bot (Black)</option>
+            <option value="pve_b">Player (Black) vs Bot (White)</option>
+            <option value="eve">Bot vs Bot</option>
+        </select>
+        
+        <label for="searchDepth"> Depth: </label>
+        <select id="searchDepth">
+            <option value="2">2 (Instant)</option>
+            <option value="3" selected>3 (Fast, Strong)</option>
+            <option value="4">4 (Standard Engine)</option>
+            <option value="5">5 (Heavy Computation)</option>
+        </select>
+        <br><br>
+        <button id="startBtn">Start Game</button>
+        <button id="flipBtn" class="secondary">Flip Board</button>
+    </div>
+
+    <div id="status">Waiting to start...</div>
+    <div id="board"></div>
+    
+    <div class="stats-box">
+        <div class="stat-item">Nodes Searched: <span id="nodesCount">0</span></div>
+        <div class="stat-item">Speed: <span id="nps">0</span> NPS</div>
+        <div class="stat-item">Eval: <span id="evalScore">0.00</span></div>
+    </div>
+</div>
+
+<!-- Application Logic -->
+<script src="main.js"></script>
+</body>
+</html>
