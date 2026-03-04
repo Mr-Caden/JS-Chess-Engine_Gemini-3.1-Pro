@@ -37,7 +37,7 @@ let nodes = 0;
 /**
  * Calculates the static evaluation of the board. Heavily optimized using string parsing.
  * @param {Object} game - The chess.js instance.
- * @returns {number} The evaluation score in centipawns.
+ * @returns {number} The absolute evaluation score in centipawns (positive = White winning).
  */
 function evaluate(game) {
     let fen = game.fen().split(' ')[0];
@@ -55,6 +55,7 @@ function evaluate(game) {
             let isWhite = (char === char.toUpperCase());
             let type = char.toLowerCase();
             
+            // Re-indexes standard chess squares depending on piece color arrays
             let tableIndex = isWhite ? square : (56 - (square & 56)) + (square & 7); 
             
             let mg_val = pieceValues[type];
@@ -67,6 +68,7 @@ function evaluate(game) {
             else if (type === 'q') { mg_val += mg_queen[tableIndex]; eg_val += mg_queen[tableIndex]; phase += phaseValues['q']; }
             else if (type === 'k') { mg_val += mg_king[tableIndex]; eg_val += eg_king[tableIndex]; }
 
+            // Absolute Evaluation Generation
             if (isWhite) {
                 mg_score += mg_val;
                 eg_score += eg_val;
@@ -144,8 +146,9 @@ function negaMax(game, depth, alpha, beta, color) {
 
     let moves = game.moves({ verbose: true });
     if (moves.length === 0) {
-        if (game.in_check()) return -30000 + game.history().length; // Faster checkmates are mathematically favored
-        return 0;
+        // Mathematically favor checkmates found sooner in the tree
+        if (game.in_check()) return -30000 - depth; 
+        return 0; // Draw/Stalemate
     }
     if (game.in_draw()) return 0;
 
@@ -170,12 +173,16 @@ self.onmessage = function(e) {
     let depth = e.data.depth;
     nodes = 0;
 
-    // Check Opening Book first
+    // Check Opening Book first, and explicitly evaluate it to prevent UI 0.00 bugs
     if (OPENING_BOOK[game.fen()]) {
         let bookMoveSan = OPENING_BOOK[game.fen()];
         let move = game.moves({ verbose: true }).find(m => m.san === bookMoveSan);
         if (move) {
-            self.postMessage({ type: 'done', move: move, nodes: 0, eval: 0 });
+            game.move(move.san);
+            let staticEval = evaluate(game);
+            game.undo();
+            
+            self.postMessage({ type: 'done', move: move, nodes: 0, eval: staticEval });
             return;
         }
     }
@@ -205,6 +212,6 @@ self.onmessage = function(e) {
         type: 'done', 
         move: bestMove, 
         nodes: nodes, 
-        eval: bestScore * color // Send absolute evaluation back to UI
+        eval: bestScore * color // Send absolute evaluation back to UI mathematically
     });
 };
