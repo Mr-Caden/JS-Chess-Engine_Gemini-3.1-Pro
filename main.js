@@ -1,7 +1,7 @@
 /**
  * main.js
- * Handles the UI thread, user input, DOM updates, and communication 
- * with the background Web Worker (the engine).
+ * Handles the UI thread, DOM updates, user interaction, move highlighting, 
+ * audio playback, and communication with the background Web Worker.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,8 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let isBotThinking = false;
     let startTime = 0;
 
-    // Load the Web Worker (Engine Thread)
+    // Load Web Worker (Engine Thread)
     const worker = new Worker('worker.js');
+
+    // Load Sound Effects (Standard Chess.com CDNs)
+    const moveSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3');
+    const captureSound = new Audio('https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3');
 
     // --- 2. DOM ELEMENTS ---
     const domNodesCount = document.getElementById('nodesCount');
@@ -23,40 +27,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const domStatus = document.getElementById('status');
     const domDepth = document.getElementById('searchDepth');
     const domGameMode = document.getElementById('gameMode');
+    const domEvalFill = document.getElementById('evalFill');
+    const domEvalText = document.getElementById('evalText');
 
     // --- 3. EVENT LISTENERS ---
     document.getElementById('startBtn').addEventListener('click', startGame);
     document.getElementById('flipBtn').addEventListener('click', flipBoard);
+    window.addEventListener('resize', () => { if (board) board.resize(); }); // Mobile scaling
 
     // --- 4. WORKER COMMUNICATION ---
     worker.onmessage = function(e) {
         const timeElapsed = (performance.now() - startTime) / 1000;
 
-        // Progress updates sent periodically during deep searches
         if (e.data.type === 'progress') {
             domNodesCount.innerText = e.data.nodes.toLocaleString();
             domNps.innerText = Math.round(e.data.nodes / timeElapsed).toLocaleString();
         } 
-        // Search completed
         else if (e.data.type === 'done') {
             domNodesCount.innerText = e.data.nodes.toLocaleString();
             domNps.innerText = Math.round(e.data.nodes / timeElapsed).toLocaleString();
             
-            // Format Evaluation (Centipawns to Standard Chess Eval)
-            let evalFormatted = (e.data.eval / 100).toFixed(2);
-            if (e.data.eval > 20000) evalFormatted = "M1+";
-            if (e.data.eval < -20000) evalFormatted = "-M1+";
-            domEvalScore.innerText = evalFormatted;
-
+            updateEvalBar(e.data.eval);
             isBotThinking = false;
 
-            // Execute the calculated move
             if (e.data.move) {
-                game.move(e.data.move.san);
-                board.position(game.fen());
-                updateStatus();
+                executeMove(e.data.move);
 
-                // If in Bot vs Bot mode, immediately trigger the next turn
                 if (isBotVsBot && !game.game_over()) {
                     setTimeout(triggerBot, 500); 
                 }
@@ -64,7 +60,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- 5. GAME LOGIC & UI UPDATES ---
+    // --- 5. UI & GAME LOGIC FUNCTIONS ---
+
+    /**
+     * Updates the Visual Evaluation bar based on the engine's score.
+     * @param {number} evalScore - Evaluation in centipawns.
+     */
+    function updateEvalBar(evalScore) {
+        // Format string for Stats Box
+        let evalFormatted = (evalScore / 100).toFixed(2);
+        if (evalScore > 20000) evalFormatted = "M1+";
+        if (evalScore < -20000) evalFormatted = "-M1+";
+        
+        domEvalScore.innerText = evalFormatted;
+        domEvalText.innerText = evalScore > 0 ? `+${evalFormatted}` : evalFormatted;
+
+        // Calculate height percentage (Caps at +8 / -8 pawns for UI purposes)
+        let cappedEval = Math.max(-800, Math.min(800, evalScore));
+        let percent = 50 + (cappedEval / 16); // 800 / 16 = 50
+
+        // Invert bar if playing as Black (White is at the top)
+        if (board.orientation() === 'black') {
+            percent = 100 - percent;
+        }
+
+        domEvalFill.style.height = `${percent}%`;
+    }
+
+    /**
+     * Applies CSS classes to highlight the from/to squares of a move.
+     * @param {Object} move - The chess.js move object.
+     */
+    function highlightMove(move) {
+        // Remove previous highlights
+        $('#board .square-55d63').removeClass('highlight-white highlight-black');
+        
+        const squares =[move.from, move.to];
+        squares.forEach(sq => {
+            let $square = $('#board .square-' + sq);
+            let isWhiteSquare = $square.hasClass('white-1e1d7');
+            $square.addClass(isWhiteSquare ? 'highlight-white' : 'highlight-black');
+        });
+    }
+
+    /**
+     * Executes a move on the board, plays sound, and triggers highlights.
+     * @param {Object} move - The chess.js move object.
+     */
+    function executeMove(move) {
+        game.move(move.san);
+        board.position(game.fen());
+        highlightMove(move);
+        
+        if (move.captured) captureSound.play();
+        else moveSound.play();
+
+        updateStatus();
+    }
+
+    /**
+     * Updates the status text (Checkmate, Draw, or turn indication).
+     */
     function updateStatus() {
         let statusText = '';
         let moveColor = game.turn() === 'w' ? 'White' : 'Black';
@@ -73,11 +129,14 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (game.in_draw()) statusText = 'Game over, Drawn Position';
         else {
             statusText = `${moveColor} to move`;
-            if (game.in_check()) statusText += `, ${moveColor} is in check!`;
+            if (game.in_check()) statusText += ` (${moveColor} is in check!)`;
         }
         domStatus.innerText = statusText;
     }
 
+    /**
+     * Sends the current board state to the Web Worker for calculation.
+     */
     function triggerBot() {
         if (game.game_over()) return;
         
@@ -86,41 +145,57 @@ document.addEventListener('DOMContentLoaded', () => {
         startTime = performance.now();
         
         let depth = parseInt(domDepth.value);
-        
-        // Send current board state to the background worker
         worker.postMessage({ fen: game.fen(), depth: depth });
     }
 
+    /**
+     * Fired when a player drops a piece manually.
+     */
     function onDrop(source, target) {
-        // Prevent moves if UI is locked
         if (isBotVsBot || isBotThinking) return 'snapback';
 
         let move = game.move({
             from: source,
             to: target,
-            promotion: 'q' // Auto-promote to Queen for simplicity
+            promotion: 'q' 
         });
 
         if (move === null) return 'snapback';
 
-        updateStatus();
-        triggerBot(); // Hand turn over to AI
+        game.undo(); // Undo temporarily so executeMove can handle graphics/sound
+        executeMove(move);
+        triggerBot(); 
     }
 
-    function onDragStart(source, piece, position, orientation) {
+    /**
+     * Prevents picking up invalid pieces.
+     */
+    function onDragStart(source, piece) {
         if (game.game_over() || isBotVsBot || isBotThinking) return false;
-        
-        // Prevent player from grabbing opponent's pieces
         if (playerColor === 'w' && piece.search(/^b/) !== -1) return false; 
         if (playerColor === 'b' && piece.search(/^w/) !== -1) return false; 
     }
 
+    /**
+     * Flips the board visually and updates the Evaluation bar orientation.
+     */
     function flipBoard() {
-        if (board) board.flip();
+        if (board) {
+            board.flip();
+            // Re-trigger eval bar update to flip its visual orientation
+            let currentEvalStr = domEvalScore.innerText;
+            if (!currentEvalStr.includes("M")) {
+                updateEvalBar(parseFloat(currentEvalStr) * 100);
+            }
+        }
     }
 
+    /**
+     * Initializes a fresh game based on UI settings.
+     */
     function startGame() {
         game.reset();
+        $('#board .square-55d63').removeClass('highlight-white highlight-black');
         
         let mode = domGameMode.value;
         isBotVsBot = (mode === 'eve');
@@ -139,15 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
         board = Chessboard('board', config);
         updateStatus();
         
-        // Reset Stats UI
         domNodesCount.innerText = "0";
         domNps.innerText = "0";
         domEvalScore.innerText = "0.00";
+        domEvalFill.style.height = "50%"; // Reset eval bar
 
-        // Kick off game if Bot plays White or if it's Bot vs Bot
-        if (isBotVsBot || playerColor === 'b') {
-            triggerBot(); 
-        }
+        if (isBotVsBot || playerColor === 'b') triggerBot(); 
     }
 
     // Initialize an empty board visual on load
