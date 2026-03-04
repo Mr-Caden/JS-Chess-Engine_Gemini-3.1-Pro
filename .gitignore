@@ -1,0 +1,13 @@
+# Editor directories
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependencies (if you ever use npm/node_modules)
+node_modules/
+
+# Local logs
+*.log
