@@ -1,4 +1,4 @@
-# ♟️ Web-Worker JS Chess Engine
+# Web-Worker JS Chess Engine
 ![Lighthouse Score: 100/100](https://img.shields.io/badge/Lighthouse-100%2F100-brightgreen)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
@@ -8,7 +8,7 @@ Unlike traditional JS game loops that freeze the DOM during heavy computation, t
 
 *(Insert a GIF of you playing a move and the Eval Bar shifting here)*
 
-## 🚀 Features & Architecture
+## Features & Architecture
 
 * **Web Worker Threading:** Core mathematical processing runs on a background thread.
 * **Dynamic Evaluation Bar:** A Lichess-style visual bar that maps the engine's absolute centipawn evaluation directly into the CSS UI smoothly. 
@@ -19,14 +19,14 @@ Unlike traditional JS game loops that freeze the DOM during heavy computation, t
 * **Tapered String Evaluation:** Heavily optimized static evaluation by iterating raw FEN strings rather than dynamically allocating Javascript objects, boosting speed by ~400%. Shifts piece-square values dynamically between the Middle and End-game.
 * **100/100 Accessibility:** Fully mobile responsive, high-contrast UI compliant with Lighthouse web standards. Features audio playback for moves and visual square highlighting.
 
-## 📂 File Structure
+## File Structure
 
 * `index.html`: The semantic UI and entry point.
 * `style.css`: Presentation layer, Flexbox layout, and CSS Eval Bar animations.
 * `main.js`: Main UI thread. Handles chessboard rendering, DOM state, audio, highlights, and Web Worker messaging.
 * `worker.js`: The backend processor thread. Contains the Opening book, evaluation weights, and search algorithms.
 
-## 💻 How to Run Locally
+## How to Run Locally
 
 Due to modern browser Cross-Origin Resource Sharing (CORS) security policies regarding Web Workers (`worker.js`), this project must be served via a local web server (opening `index.html` directly from your hard drive will result in a security block).
 
@@ -39,7 +39,7 @@ Due to modern browser Cross-Origin Resource Sharing (CORS) security policies reg
 2. Run `python -m http.server 8000` (or `python3`).
 3. Open `http://localhost:8000` in your browser.
 
-## 🛠️ Tech Stack & Dependencies
+## Tech Stack & Dependencies
 * **Core Logic:** Vanilla Javascript (ES6+)
 * **UI/Board Graphics:**[Chessboard.js](https://chessboardjs.com/)
 * **Move Validation/Generation:** [Chess.js](https://github.com/jhlywa/chess.js)
