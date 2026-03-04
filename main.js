@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let playerColor = 'w';
     let isBotThinking = false;
     let startTime = 0;
+    let currentEval = 0.0; // Track precise evaluation for visual flips
 
     // Load Web Worker (Engine Thread)
     const worker = new Worker('worker.js');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const domStatus = document.getElementById('status');
     const domDepth = document.getElementById('searchDepth');
     const domGameMode = document.getElementById('gameMode');
+    const domEvalBar = document.getElementById('evalBar');
     const domEvalFill = document.getElementById('evalFill');
     const domEvalText = document.getElementById('evalText');
 
@@ -47,7 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
             domNodesCount.innerText = e.data.nodes.toLocaleString();
             domNps.innerText = Math.round(e.data.nodes / timeElapsed).toLocaleString();
             
-            updateEvalBar(e.data.eval);
+            currentEval = e.data.eval;
+            updateEvalBar(currentEval);
             isBotThinking = false;
 
             if (e.data.move) {
@@ -64,27 +67,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Updates the Visual Evaluation bar based on the engine's score.
-     * @param {number} evalScore - Evaluation in centipawns.
+     * @param {number} evalScore - Evaluation in absolute centipawns (positive = White win).
      */
     function updateEvalBar(evalScore) {
-        // Format string for Stats Box
-        let evalFormatted = (evalScore / 100).toFixed(2);
-        if (evalScore > 20000) evalFormatted = "M1+";
-        if (evalScore < -20000) evalFormatted = "-M1+";
+        // Format strings using absolutes 
+        let evalFormatted = (Math.abs(evalScore) / 100).toFixed(2);
+        let textFormatted = (Math.abs(evalScore) / 100).toFixed(1);
+
+        if (evalScore > 20000) {
+            evalFormatted = "M";
+            textFormatted = "M";
+        } else if (evalScore < -20000) {
+            evalFormatted = "M";
+            textFormatted = "M";
+        }
+
+        let sign = evalScore > 0 ? "+" : (evalScore < 0 ? "-" : "");
+        if (evalScore === 0) sign = ""; // Clean '0.00' presentation
         
-        domEvalScore.innerText = evalFormatted;
-        domEvalText.innerText = evalScore > 0 ? `+${evalFormatted}` : evalFormatted;
+        domEvalScore.innerText = evalScore === 0 ? "0.00" : `${sign}${evalFormatted}`;
+        domEvalText.innerText = textFormatted;
 
         // Calculate height percentage (Caps at +8 / -8 pawns for UI purposes)
         let cappedEval = Math.max(-800, Math.min(800, evalScore));
-        let percent = 50 + (cappedEval / 16); // 800 / 16 = 50
-
-        // Invert bar if playing as Black (White is at the top)
-        if (board.orientation() === 'black') {
-            percent = 100 - percent;
-        }
+        let percent = 50 + (cappedEval / 16); // 800 / 16 = +50%
 
         domEvalFill.style.height = `${percent}%`;
+
+        // Bar and Text visual manipulation for black orientation flips
+        let isBlackOrientation = board.orientation() === 'black';
+        domEvalBar.style.transform = isBlackOrientation ? 'rotate(180deg)' : 'none';
+        domEvalText.style.transform = isBlackOrientation ? 'rotate(180deg)' : 'none';
+
+        // Keep text constrained to whichever section represents the active advantage
+        if (percent >= 50) {
+            // White advantage -> Place text inside the lower white bar natively
+            domEvalText.style.top = 'auto';
+            domEvalText.style.bottom = '5px';
+            domEvalText.style.color = '#333';
+        } else {
+            // Black advantage -> Place text inside the upper black bar natively
+            domEvalText.style.bottom = 'auto';
+            domEvalText.style.top = '5px';
+            domEvalText.style.color = '#f5f5f5';
+        }
     }
 
     /**
@@ -182,11 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function flipBoard() {
         if (board) {
             board.flip();
-            // Re-trigger eval bar update to flip its visual orientation
-            let currentEvalStr = domEvalScore.innerText;
-            if (!currentEvalStr.includes("M")) {
-                updateEvalBar(parseFloat(currentEvalStr) * 100);
-            }
+            // Re-trigger eval bar math (which rotates based on the new orientation)
+            updateEvalBar(currentEval);
         }
     }
 
@@ -214,10 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
         board = Chessboard('board', config);
         updateStatus();
         
+        // Resetting global metrics and board visuals smoothly
         domNodesCount.innerText = "0";
         domNps.innerText = "0";
-        domEvalScore.innerText = "0.00";
-        domEvalFill.style.height = "50%"; // Reset eval bar
+        currentEval = 0.0;
+        updateEvalBar(currentEval);
 
         if (isBotVsBot || playerColor === 'b') triggerBot(); 
     }
